@@ -1,3 +1,4 @@
+
 #include "MegaJoy.h"
 
 void setup(){
@@ -15,7 +16,7 @@ void setupPins(void){
   // Set all the digital pins as inputs
   // with the pull-up enabled, except for the 
   // two serial line pins
-  for (int i = 22; i < 54; i++){
+  for (int i = 2; i <= 54; i++){
     pinMode(i, INPUT);
     digitalWrite(i, HIGH);
   }
@@ -32,8 +33,8 @@ megaJoyControllerData_t getControllerData(void){
   // Since our buttons are all held high and
   //  pulled low when pressed, we use the "!"
   //  operator to invert the readings from the pins
-  for (int i = 22; i < 54; i++){
-    controllerData.buttonArray[(i - 22) / 8] |= (!digitalRead(i)) << ((i - 22) % 8);
+  for (int i = 2; i < 54; i++){
+    controllerData.buttonArray[(i - 2) / 8] |= (!digitalRead(i)) << ((i - 2) % 8);
   }
   
   // Set the analog sticks
@@ -41,18 +42,18 @@ megaJoyControllerData_t getControllerData(void){
   //  we need to perform a bit shift operation to
   //  lose the 2 least significant bits and get an
   //  8 bit number that we can use 
-  controllerData.analogAxisArray[0] = 512;
-  controllerData.analogAxisArray[1] = 512; 
-  controllerData.analogAxisArray[2] = 512; 
-  controllerData.analogAxisArray[3] = 512; 
-  controllerData.analogAxisArray[4] = 512; 
-  controllerData.analogAxisArray[5] = 512; 
-  controllerData.analogAxisArray[6] = 512; 
-  controllerData.analogAxisArray[7] = 512; 
-  controllerData.analogAxisArray[8] = 512; 
-  controllerData.analogAxisArray[9] = 512; 
-  controllerData.analogAxisArray[10] = 512; 
-  controllerData.analogAxisArray[11] = 512; 
+  controllerData.analogAxisArray[0] = analogRead(A0);
+  controllerData.analogAxisArray[1] = analogRead(A1); 
+  controllerData.analogAxisArray[2] = 0; 
+  controllerData.analogAxisArray[3] = 0; 
+  controllerData.analogAxisArray[4] = 0; 
+  controllerData.analogAxisArray[5] = 0; 
+  controllerData.analogAxisArray[6] = 0; 
+  controllerData.analogAxisArray[7] = 0; 
+  controllerData.analogAxisArray[8] = 0; 
+  controllerData.analogAxisArray[9] = 0; 
+  controllerData.analogAxisArray[10] = 0; 
+  controllerData.analogAxisArray[11] = 0; 
   
   // And return the data!
   return controllerData;
