@@ -1,5 +1,3 @@
-/*HTH 12-02-2018*/
-
 #include "MegaJoy.h"
 
 #define pin_Start  22
@@ -10,9 +8,19 @@
 #define def_ValueMin 0
 #define def_ValueCenter 512
 #define def_ValueMax 1024
+#define pin_Reset 42
+#define def_Normal 0
+#define def_Race 1
+#define pin_X_Rotation A1
+#define pin_Y_Rotation A2
+#define pin_Z_Rotation A3
 
-/*Default: 1, 1: Normal, 2: Race*/
-int mode = 2;
+/*Default: 1, 0: Normal, 1: Race*/
+int mode = 1;
+/*Default: true, true: Release, false: Press*/
+bool prev_Status = true;
+/*Default: false, false: Stop, true: Start*/
+bool is_Start = false;
 
 int A1_ValueCenter = 512;
 int A1_ValueError = 0;
@@ -29,16 +37,21 @@ int A3_ValueError_2 = 0;
 void setup()
 {
   setupPins();
+  setupValues();
   setupMegaJoy();
+
+  is_Start = true;
 }
 
 void loop()
 {
-  //Serial.begin(9600);
-
   // Always be getting fresh data
-  megaJoyControllerData_t controllerData = getControllerData();
-  setControllerData(controllerData);
+
+  if (is_Start)
+  {
+    megaJoyControllerData_t controllerData = getControllerData();
+    setControllerData(controllerData);
+  }
 }
 
 void setupPins(void)
@@ -55,19 +68,20 @@ void setupPins(void)
 
     pin_Current += pin_Step;
   }
+}
 
-  A1_ValueCenter =  analogRead(A1);
+void setupValues() {
+  A1_ValueCenter =  analogRead(pin_X_Rotation);
   A1_ValueError = def_ValueCenter - A1_ValueCenter;
   A1_ValueError_2 = def_ValueCenter - map(A1_ValueCenter + A1_ValueError, def_ValueStepLeft, def_ValueStepRight, def_ValueMin, def_ValueMax);
 
-  A2_ValueCenter =  analogRead(A2);
+  A2_ValueCenter =  analogRead(pin_Y_Rotation);
   A2_ValueError = def_ValueCenter - A2_ValueCenter;
   A2_ValueError_2 = def_ValueCenter - map(A2_ValueCenter + A2_ValueError, def_ValueStepLeft, def_ValueStepRight, def_ValueMin, def_ValueMax);
 
-  A3_ValueCenter =  analogRead(A3);
+  A3_ValueCenter =  analogRead(pin_Z_Rotation);
   A3_ValueError = def_ValueCenter - A3_ValueCenter;
   A3_ValueError_2 = def_ValueCenter - map(A3_ValueCenter + A3_ValueError, def_ValueStepLeft, def_ValueStepRight, def_ValueMin, def_ValueMax);
-
 }
 
 megaJoyControllerData_t getControllerData(void) {
@@ -85,7 +99,29 @@ megaJoyControllerData_t getControllerData(void) {
   int pin_Current = 22;
   for (int i = 0; i < pin_Total; i++)
   {
-    controllerData.buttonArray[(pin_Current - pin_Start) / 8] |= (!digitalRead(pin_Current)) << ((pin_Current - pin_Start) % 8);
+    if (pin_Current == pin_Reset)
+    {
+      if (digitalRead(pin_Reset) != prev_Status)
+      {
+        prev_Status = !prev_Status;
+        if (!prev_Status)
+        {
+          if (mode == def_Normal)
+            mode = def_Race;
+          else  if (mode == def_Race)
+            mode = def_Normal;
+
+          is_Start = false;
+          setupValues();
+          is_Start = true;
+        }
+      }
+    }
+    else
+    {
+      controllerData.buttonArray[(pin_Current - pin_Start) / 8] |= (!digitalRead(pin_Current)) << ((pin_Current - pin_Start) % 8);
+    }
+
     pin_Current += pin_Step;
   }
 
@@ -102,11 +138,11 @@ megaJoyControllerData_t getControllerData(void) {
   //  controllerData.analogAxisArray[4] = analogRead(A2);// Y Rotation
   //  controllerData.analogAxisArray[5] = analogRead(A3);// Z Rotation
 
-  controllerData.analogAxisArray[0] = 0;
-  controllerData.analogAxisArray[1] = 0;
-  controllerData.analogAxisArray[2] = 512;  // Z Axis
-  controllerData.analogAxisArray[3] = 512;  // X Rotation
-  controllerData.analogAxisArray[4] = 512;// Y Rotation
+  controllerData.analogAxisArray[0] = def_ValueCenter;
+  controllerData.analogAxisArray[1] = def_ValueCenter;
+  controllerData.analogAxisArray[2] = def_ValueCenter;  // Z Axis
+  controllerData.analogAxisArray[3] = def_ValueCenter;  // X Rotation
+  controllerData.analogAxisArray[4] = def_ValueCenter;// Y Rotation
   controllerData.analogAxisArray[5] = getValuePinA3();// Z Rotation
 
   // And return the data!
@@ -115,10 +151,10 @@ megaJoyControllerData_t getControllerData(void) {
 
 int getValuePinA1() {
   int val = def_ValueCenter;
-  if (mode == 1)
-    val = analogRead(A1) + A1_ValueError;
-  else if (mode == 2) {
-    int temp = analogRead(A1) + A1_ValueError;
+  if (mode == def_Normal)
+    val = analogRead(pin_X_Rotation) + A1_ValueError;
+  else if (mode == def_Race) {
+    int temp = analogRead(pin_X_Rotation) + A1_ValueError;
     if (temp < def_ValueStepLeft)
       val = def_ValueMin;
     else if (temp > def_ValueStepRight)
@@ -132,10 +168,10 @@ int getValuePinA1() {
 
 int getValuePinA2() {
   int val = def_ValueCenter;
-  if (mode == 1)
-    val = analogRead(A2) + A2_ValueError;
-  else if (mode == 2) {
-    int temp = analogRead(A2) + A2_ValueError;
+  if (mode == def_Normal)
+    val = analogRead(pin_Y_Rotation) + A2_ValueError;
+  else if (mode == def_Race) {
+    int temp = analogRead(pin_Y_Rotation) + A2_ValueError;
     if (temp < def_ValueStepLeft)
       val = def_ValueMin;
     else if (temp > def_ValueStepRight)
@@ -149,10 +185,10 @@ int getValuePinA2() {
 
 int getValuePinA3() {
   int val = def_ValueCenter;
-  if (mode == 1)
-    val = analogRead(A3) + A3_ValueError;
-  else if (mode == 2) {
-    int temp = analogRead(A3) + A3_ValueError;
+  if (mode == def_Normal)
+    val = analogRead(pin_Z_Rotation) + A3_ValueError;
+  else if (mode == def_Race) {
+    int temp = analogRead(pin_Z_Rotation) + A3_ValueError;
     if (temp < def_ValueStepLeft)
       val = def_ValueMin;
     else if (temp > def_ValueStepRight)
@@ -163,4 +199,3 @@ int getValuePinA3() {
 
   return val;
 }
-
