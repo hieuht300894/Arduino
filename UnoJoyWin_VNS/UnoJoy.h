@@ -5,22 +5,22 @@
  *  This library gives you a standard way to create Arduino code that talks
  *   to the UnoJoy firmware in order to make native USB game controllers.
  *  Functions:
- *   setupMegaJoy()
+ *   setupUnoJoy()
  *   getBlankDataForController()
- *   setControllerData(megaJoyControllerData_t dataToSet)
+ *   setControllerData(dataForController_t dataToSet)
  *
  *   NOTE: You cannot use pins 0 or 1 if you use this code - they are used by the serial communication.
- *         Also, the setupMegaJoy() function starts the serial port at 38400, so if you're using
+ *         Also, the setupUnoJoy() function starts the serial port at 38400, so if you're using
  *         the serial port to debug and it's not working, this may be your problem.
  *   
  *   === How to use this library ===
  *   If you want, you can move this file into your Arduino/Libraries folder, then use it like a normal library.
- *   However, since you'll need to refer to the details of the megaJoyControllerData_t struct in this file, I would suggest you use
+ *   However, since you'll need to refer to the details of the dataForController_t struct in this file, I would suggest you use
  *    it by adding it to your Arduino sketch manually (in Arduino, go to Sketch->Add file...)
  *
  *  To use this library to make a controller, you'll need to do 3 things:
- *   Call setupMegaJoy(); in the setup() block
- *   Create and populate a megaJoyControllerData_t type variable and fill it with your data
+ *   Call setupUnoJoy(); in the setup() block
+ *   Create and populate a dataForController_t type variable and fill it with your data
  *         The getBlankDataForController() function is good for that.
  *   Call setControllerData(yourData); where yourData is the variable from above,
  *         somewhere in your loop(), once you're ready to push your controller data to the system.
@@ -32,10 +32,10 @@
  *   Arduino's communication's chip using the instructions found in the 'Firmware' folder,
  *   then unplug and re-plug in the Arduino. 
  * 
- *  Details about the megaJoyControllerData_t type are below, but in order to create and use it,
+ *  Details about the dataForController_t type are below, but in order to create and use it,
  *   you'll declare it like:
  *
- *      megaJoyControllerData_t sexyControllerData;
+ *      dataForController_t sexyControllerData;
  *
  *   and then control button presses and analog stick movement with statements like:
  *      
@@ -55,44 +55,55 @@
     //  then use the setControllerData function to send that data out.
     //  Don't change this - the order of the fields is important for
     //  the communication between the Arduino and it's communications chip.
-#define BUTTON_ARRAY_SIZE 8
-#define ANALOG_AXIS_ARRAY_SIZE 12
+	typedef struct dataForController_t
+	{
+		uint8_t triangleOn : 1;  // Each of these member variables
+		uint8_t circleOn : 1;    //  control if a button is off or on
+		uint8_t squareOn : 1;    // For the buttons, 
+		uint8_t crossOn : 1;     //  0 is off
+		uint8_t l1On : 1;        //  1 is on
+		uint8_t l2On : 1;        
+		uint8_t l3On : 1;        // The : 1 here just tells the compiler
+		uint8_t r1On : 1;        //  to only have 1 bit for each variable.
+                                 //  This saves a lot of space for our type!
+		uint8_t r2On : 1;
+		uint8_t r3On : 1;
+		uint8_t selectOn : 1;
+		uint8_t startOn : 1;
+		uint8_t homeOn : 1;
+		uint8_t dpadLeftOn : 1;
+		uint8_t dpadUpOn : 1;
+		uint8_t dpadRightOn : 1;
+
+		uint8_t dpadDownOn : 1;
+        uint8_t padding : 7;     // We end with 7 bytes of padding to make sure we get our data aligned in bytes
+                                 
+		uint8_t leftStickX : 8;  // Each of the analog stick values can range from 0 to 255
+		uint8_t leftStickY : 8;  //  0 is fully left or up
+		uint8_t rightStickX : 8; //  255 is fully right or down 
+		uint8_t rightStickY : 8; //  128 is centered.
+                                 // Important - analogRead(pin) returns a 10 bit value, so if you're getting strange
+                                 //  results from analogRead, you may need to do (analogRead(pin) >> 2) to get good data
+	} dataForController_t;
     
-  typedef struct megaJoyControllerData_t
-  {
-    uint8_t buttonArray[BUTTON_ARRAY_SIZE];
-    
-    uint8_t dpad0LeftOn : 1;
-    uint8_t dpad0UpOn : 1;
-    uint8_t dpad0RightOn : 1;
-    uint8_t dpad0DownOn : 1;
-    
-    uint8_t dpad1LeftOn : 1;
-    uint8_t dpad1UpOn : 1;
-    uint8_t dpad1RightOn : 1;
-    uint8_t dpad1DownOn : 1;
-    
-    int16_t analogAxisArray[ANALOG_AXIS_ARRAY_SIZE];
-  } megaJoyControllerData_t;
-    
-    // Call setupMegaJoy in the setup block of your program.
+    // Call setupUnoJoy in the setup block of your program.
     //  It sets up the hardware UnoJoy needs to work properly
-    void setupMegaJoy(void);
+    void setupUnoJoy(void);
     
     // This sets the controller to reflect the button and
-    // joystick positions you input (as a megaJoyControllerData_t).
+    // joystick positions you input (as a dataForController_t).
     // The controller will just send a zeroed (joysticks centered)
     // signal until you tell it otherwise with this function.
-    void setControllerData(megaJoyControllerData_t);
+    void setControllerData(dataForController_t);
     
     // This function gives you a quick way to get a fresh
-    //  megaJoyControllerData_t with:
+    //  dataForController_t with:
     //    No buttons pressed
     //    Joysticks centered
     // Very useful for starting each loop with a blank controller, for instance.
-    // It returns a megaJoyControllerData_t, so you want to call it like:
+    // It returns a dataForController_t, so you want to call it like:
     //    myControllerData = getBlankDataForController();
-    megaJoyControllerData_t getBlankDataForMegaController(void);
+    dataForController_t getBlankDataForController(void);
     
     // You can also call the setup function with an integer argument
     //  declaring how often, in  milliseconds, the buffer should send its data 
@@ -103,24 +114,24 @@
     //  on the communications chip times out on each serial read after 25ms.
     //  If you need more time than 20ms, you'll have to alter the code for the
     //  ATmega8u2 as well
-    void setupMegaJoy(int);
+    void setupUnoJoy(int);
     
     
 //----- End of the interface code you should be using -----//
 //----- Below here is the actual implementation of
     
-  // This megaJoyControllerData_t is used to store
+  // This dataForController_t is used to store
   //  the controller data that you want to send
   //  out to the controller.  You shouldn't mess
   //  with this directly - call setControllerData instead
-  megaJoyControllerData_t controllerDataBuffer;
+  dataForController_t controllerDataBuffer;
 
   // This updates the data that the controller is sending out.
   //  The system actually works as following:
   //  The UnoJoy firmware on the ATmega8u2 regularly polls the
-  //  Arduino chip for individual bytes of a megaJoyControllerData_t.
+  //  Arduino chip for individual bytes of a dataForController_t.
   //  
-  void setControllerData(megaJoyControllerData_t controllerData){
+  void setControllerData(dataForController_t controllerData){
     // Probably unecessary, but this guarantees that the data
     //  gets copied to our buffer all at once.
     ATOMIC_BLOCK(ATOMIC_FORCEON){
@@ -142,9 +153,9 @@
   
   // This is the setup function - it sets up the serial communication
   //  and the timer interrupt for actually sending the data back and forth.
-  void setupMegaJoy(void){
+  void setupUnoJoy(void){
     // First, let's zero out our controller data buffer (center the sticks)
-    controllerDataBuffer = getBlankDataForMegaController();
+    controllerDataBuffer = getBlankDataForController();
   
     // Start the serial port at the specific, low-error rate UnoJoy uses.
     //  If you want to change the rate, you'll have to change it in the
@@ -165,9 +176,9 @@
   // If you really need to change the serial polling
   //  interval, use this function to initialize UnoJoy.
   //  interval is the polling frequency, in ms.
-  void setupMegaJoy(int interval){
+  void setupUnoJoy(int interval){
     serialCheckInterval = interval;
-    setupMegaJoy();
+    setupUnoJoy();
   }
   
   // This interrupt gets called approximately once per ms.
@@ -185,7 +196,7 @@
         //digitalWrite(13, HIGH);
         // Get incoming byte from the ATmega8u2
         byte inByte = Serial.read();
-        // That number tells us which byte of the megaJoyControllerData_t struct
+        // That number tells us which byte of the dataForController_t struct
         //  to send out.
         Serial.write(((uint8_t*)&controllerDataBuffer)[inByte]);
         //digitalWrite(13, LOW);
@@ -194,31 +205,35 @@
   }
   
   // Returns a zeroed out (joysticks centered) 
-  //  megaJoyControllerData_t variable
-  megaJoyControllerData_t getBlankDataForMegaController(void){
-    // Create a megaJoyControllerData_t
-    megaJoyControllerData_t controllerData;
+  //  dataForController_t variable
+  dataForController_t getBlankDataForController(void){
+    // Create a dataForController_t
+    dataForController_t controllerData;
     // Make the buttons zero
-    for (int i = 0; i < 8; i++){
-      controllerData.buttonArray[i] = 0;
-    }
-    controllerData.dpad0LeftOn = 0;
-    controllerData.dpad0UpOn = 0;
-    controllerData.dpad0RightOn = 0;
-    controllerData.dpad0DownOn = 0;  
-    
-    controllerData.dpad1LeftOn = 0;
-    controllerData.dpad1UpOn = 0;
-    controllerData.dpad1RightOn = 0;
-    controllerData.dpad1DownOn = 0;  
-    
-    //Set the sticks to 512 - centered
-    for (int i = 0; i < ANALOG_AXIS_ARRAY_SIZE; i++){
-      controllerData.analogAxisArray[i] = 512;
-    }    
-    // And return the data! 
+    controllerData.triangleOn = 0;
+    controllerData.circleOn = 0;
+    controllerData.squareOn = 0;
+    controllerData.crossOn = 0;
+    controllerData.l1On = 0;
+    controllerData.l2On = 0;
+    controllerData.l3On = 0;
+    controllerData.r1On = 0;
+    controllerData.r2On = 0;
+    controllerData.r3On = 0;
+    controllerData.dpadLeftOn = 0;
+    controllerData.dpadUpOn = 0;
+    controllerData.dpadRightOn = 0;
+    controllerData.dpadDownOn = 0;  
+    controllerData.selectOn = 0;
+    controllerData.startOn = 0;
+    controllerData.homeOn = 0;
+    //Set the sticks to 128 - centered
+    controllerData.leftStickX = 128;
+    controllerData.leftStickY = 128;
+    controllerData.rightStickX = 128;
+    controllerData.rightStickY = 128;
+    // And return the data!
     return controllerData;
   }
 
 #endif
-

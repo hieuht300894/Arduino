@@ -1,40 +1,33 @@
 #include "MegaJoy.h"
 
-#define pin_Start  22
+#define pin_Start  23
 #define pin_Step 2
 #define pin_Total 15
-#define def_ValueStepLeft 399
-#define def_ValueStepRight 611
-#define def_ValueMin 0
-#define def_ValueCenter 511
-#define def_ValueMax 1023
-#define pin_Reset 42
+#define def_ValueStepLeft 400
+#define def_ValueStepRight 612
+#define def_ValueMin 1
+#define def_ValueCenter 512
+#define def_ValueMax 1024
+#define pin_Reset 43
 #define def_Normal 0
 #define def_Race 1
 #define pin_X_Axist A1
 #define pin_Y_Axist A2
-#define pin_X_Rotation A3
-#define pin_Y_Rotation A4
-#define pin_Z_Rotation A5
+#define pin_Z_Axist A3
+#define pin_X_Rotation A4
+#define pin_Y_Rotation A5
+#define pin_Z_Rotation A6
 
 /*Default: 1, 0: Normal, 1: Race*/
-int mode = 1;
+int mode = 0;
 /*Default: true, true: Release, false: Press*/
 bool prev_Status = true;
 /*Default: false, false: Stop, true: Start*/
 bool is_Start = false;
 
-int A1_ValueCenter = 512;
-int A1_ValueError = 0;
-int A1_ValueError_2 = 0;
-
-int A2_ValueCenter = 512;
-int A2_ValueError = 0;
-int A2_ValueError_2 = 0;
-
-int A3_ValueCenter = 512;
-int A3_ValueError = 0;
-int A3_ValueError_2 = 0;
+int A1_ValueCenter = def_ValueCenter;
+int A1_ValueError = def_ValueMin;
+int A1_ValueError_2 = def_ValueMin;
 
 void setup()
 {
@@ -105,7 +98,7 @@ megaJoyControllerData_t getControllerData(void) {
   //  pulled low when pressed, we use the "!"
   //  operator to invert the readings from the pins
 
-  int pin_Current = 22;
+  int pin_Current = pin_Start;
   for (int i = 0; i < pin_Total; i++)
   {
     if (pin_Current == pin_Reset)
@@ -133,12 +126,18 @@ megaJoyControllerData_t getControllerData(void) {
   //  controllerData.analogAxisArray[4] = analogRead(A2);// Y Rotation
   //  controllerData.analogAxisArray[5] = analogRead(A3);// Z Rotation
 
-  controllerData.analogAxisArray[0] = getValueXAxist();
-  controllerData.analogAxisArray[1] = def_ValueCenter;
-  controllerData.analogAxisArray[2] = def_ValueCenter;  // Z Axis
+  controllerData.analogAxisArray[0] = getValueXAxist(); // X Axist
+  controllerData.analogAxisArray[1] = getValueYAxist(); // Y Axist
+  controllerData.analogAxisArray[2] = getValueZAxist();  // Z Axist
   controllerData.analogAxisArray[3] = def_ValueCenter;  // X Rotation
   controllerData.analogAxisArray[4] = def_ValueCenter;// Y Rotation
   controllerData.analogAxisArray[5] = def_ValueCenter;// Z Rotation
+  controllerData.analogAxisArray[6] = def_ValueCenter;
+  controllerData.analogAxisArray[7] = def_ValueCenter;
+  controllerData.analogAxisArray[8] = def_ValueCenter;
+  controllerData.analogAxisArray[9] = def_ValueCenter;
+  controllerData.analogAxisArray[10] = def_ValueCenter;
+  controllerData.analogAxisArray[11] = def_ValueCenter;
 
   // And return the data!
   return controllerData;
@@ -159,4 +158,14 @@ int getValueXAxist() {
   }
 
   return val;
+}
+
+int getValueYAxist() {
+  return analogRead(pin_Y_Axist);
+  //return map(analogRead(pin_Y_Axist), def_ValueMin, A2_ValueMax, def_ValueMin, def_ValueMax);
+}
+
+int getValueZAxist() {
+  return analogRead(pin_Z_Axist);
+  //return map(analogRead(pin_Z_Axist), def_ValueMin, A3_ValueMax, def_ValueMin, def_ValueMax);
 }
