@@ -1,13 +1,20 @@
-#include <Joystick.h>
+// Program used to test the USB Joystick object on the 
+// Arduino Leonardo or Arduino Micro.
+//
+// Matthew Heironimus
+// 2015-03-28 - Original Version
+// 2015-11-18 - Updated to use the new Joystick library 
+//              written for Arduino IDE Version 1.6.6 and
+//              above.
+// 2016-05-13   Updated to use new dynamic Joystick library
+//              that can be customized.
+//------------------------------------------------------------
 
+#include "Joystick.h"
 #define RETRY_INTERVAL 10
 
-// NOTE: This sketch file is for use with Arduino Leonardo and
-//       Arduino Micro only.
-//
-// by Matthew Heironimus
-// 2015-11-20
-//--------------------------------------------------------------------
+// Create Joystick
+Joystick_ Joystick;
 
 /* Columns */
 const byte C1 = 10;
@@ -27,11 +34,9 @@ const byte pin_A = 2;
 const byte pin_B = 3;
 
 unsigned long retry = 0;
-int pulse = 0;
-int pulseMax = 0;
-int pulseMin = 0;
-
-Joystick_ Joystick;
+int pulse = 512;
+int pulseMax = 512;
+int pulseMin = 512;
 
 void setup() {
   // Initialize Joystick Library
@@ -48,12 +53,15 @@ void setup() {
   attachInterrupt(pin_interrupt, rotate, FALLING);
   pinMode(pin_A, INPUT);
   pinMode(pin_B, INPUT);
+
+  Joystick.setThrottle(pulse);
 }
 
 void loop() {
   if ((unsigned long)(millis() - retry) > RETRY_INTERVAL)
   {
     handleButtonStatus();
+    handleVolantStatus();
     retry = millis();
   }
 }
@@ -95,7 +103,7 @@ void handleButtonStatus() {
 }
 
 void handleVolantStatus() {
-  Joystick.setRudder(map(pulse, pulseMin, pulseMax, 0 , 255));
+  Joystick.setThrottle(map(pulse, pulseMin, pulseMax, 0 , 1023));
 }
 
 void rotate() {
